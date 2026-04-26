@@ -14,7 +14,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfiguration: Missing API key' });
   }
 
+  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const prompt = `You are a fact-checking AI with one single job: determine if a claim is TRUE or FALSE.
+The current date is ${currentDate}. Take this into account for claims involving current events, current leaders, and recent history.
 
 STRICT RULES (non-negotiable):
 1. You must respond with ONLY one word — either TRUE or FALSE.
@@ -34,7 +36,7 @@ Your single-word response:`;
         'Authorization': `Bearer ${GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 5,
         temperature: 0
