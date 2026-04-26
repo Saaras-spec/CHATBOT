@@ -16,7 +16,10 @@ export default async function handler(req, res) {
 
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const prompt = `You are a fact-checking AI with one single job: determine if a claim is TRUE or FALSE.
-The current date is ${currentDate}. Take this into account for claims involving current events, current leaders, and recent history.
+The current date is ${currentDate}. 
+
+CRITICAL CONTEXT FOR RECENT EVENTS (Your training data ends in 2023):
+- Donald Trump won the 2024 US Presidential Election and is the current President of the United States.
 
 STRICT RULES (non-negotiable):
 1. You must respond with ONLY one word — either TRUE or FALSE.
