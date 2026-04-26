@@ -1,2 +1,3 @@
-# Ignore configuration file containing sensitive API keys
-config.js
+# Ignore environment variables
+.env
+.env.local
