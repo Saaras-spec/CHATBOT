@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FactCheck AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080810;
+    --surface: #0f0f1a;
+    --card: #13131e;
+    --border: #22223a;
+    --border-light: #2e2e4a;
+    --true: #00e5a0;
+    --false: #ff4060;
+    --accent: #5b5bd6;
+    --accent-soft: rgba(91,91,214,0.15);
+    --text: #eeeef5;
+    --muted: #6b6b90;
+    --hint: #3a3a5c;
+    --true-bg: rgba(0,229,160,0.07);
+    --true-border: rgba(0,229,160,0.25);
+    --true-glow: 0 0 40px rgba(0,229,160,0.15);
+    --false-bg: rgba(255,64,96,0.07);
+    --false-border: rgba(255,64,96,0.25);
+    --false-glow: 0 0 40px rgba(255,64,96,0.15);
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(91,91,214,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(91,91,214,0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Top glow */
+  .glow-orb {
+    position: fixed;
+    top: -180px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 360px;
+    background: radial-gradient(ellipse, rgba(91,91,214,0.10) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    width: 100%;
+    max-width: 720px;
+    padding: 0 20px 60px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 56px 0 36px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--accent-soft);
+    border: 1px solid rgba(91,91,214,0.28);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #9090e8;
+    margin-bottom: 22px;
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--true);
+    animation: livepulse 2s ease-in-out infinite;
+  }
+
+  @keyframes livepulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,229,160,0.5); }
+    50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(0,229,160,0); }
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(64px, 12vw, 100px);
+    letter-spacing: 6px;
+    line-height: 0.95;
+    background: linear-gradient(160deg, #fff 40%, #9090e8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+  }
+
+  .tagline {
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: flex;
+    gap: 1px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--border);
+  }
+
+  .stat {
+    flex: 1;
+    background: var(--card);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .stat-num.t { color: var(--true); }
+  .stat-num.f { color: var(--false); }
+  .stat-num.total { color: var(--text); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── Chat window ── */
+  .chat-window {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    flex: 1;
+  }
+
+  .chat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chat-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+  }
+
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .leg-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+
+  /* ── Messages ── */
+  .messages {
+    padding: 20px;
+    min-height: 340px;
+    max-height: 460px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Empty state */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    text-align: center;
+    padding: 40px 0;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .empty p {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    justify-content: center;
+    margin-top: 6px;
+  }
+
+  .chip {
+    border: 1px solid var(--border-light);
+    border-radius: 100px;
+    padding: 5px 13px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.18s;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .chip:hover {
+    border-color: rgba(91,91,214,0.4);
+    color: #9090e8;
+    background: var(--accent-soft);
+  }
+
+  /* Message rows */
+  .msg {
+    display: flex;
+    animation: msgIn 0.28s cubic-bezier(0.34,1.2,0.64,1);
+  }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .msg.user { justify-content: flex-end; }
+  .msg.ai { justify-content: flex-start; }
+
+  .user-bubble {
+    background: var(--accent-soft);
+    border: 1px solid rgba(91,91,214,0.22);
+    border-radius: 18px 18px 4px 18px;
+    padding: 11px 16px;
+    font-size: 14px;
+    line-height: 1.55;
+    max-width: 78%;
+    color: var(--text);
+  }
+
+  /* Verdict card */
+  .verdict {
+    border-radius: 18px 18px 18px 4px;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+    min-width: 160px;
+  }
+
+  .verdict.true-v {
+    background: var(--true-bg);
+    border: 1px solid var(--true-border);
+    box-shadow: var(--true-glow);
+  }
+
+  .verdict.false-v {
+    background: var(--false-bg);
+    border: 1px solid var(--false-border);
+    box-shadow: var(--false-glow);
+  }
+
+  /* shimmer on reveal */
+  .verdict::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+    animation: shimmer 0.8s ease forwards;
+  }
+
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+
+  .v-icon-wrap {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    animation: iconPop 0.35s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+  }
+
+  @keyframes iconPop {
+    from { transform: scale(0) rotate(-30deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  .true-v .v-icon-wrap { background: rgba(0,229,160,0.2); }
+  .false-v .v-icon-wrap { background: rgba(255,64,96,0.2); }
+
+  .v-word {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 44px;
+    letter-spacing: 3px;
+    line-height: 1;
+    animation: wordIn 0.3s ease 0.15s both;
+  }
+
+  @keyframes wordIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .true-v .v-word { color: var(--true); }
+  .false-v .v-word { color: var(--false); }
+
+  /* Loading */
+  .loading-bub {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px 18px 18px 4px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .loading-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .dots { display: flex; gap: 5px; }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: dotBounce 1.2s ease-in-out infinite;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Error */
+  .err-bub {
+    background: rgba(255,64,96,0.07);
+    border: 1px solid rgba(255,64,96,0.2);
+    border-radius: 12px;
+    padding: 11px 16px;
+    font-size: 13px;
+    color: #ff8099;
+    font-family: 'Space Mono', monospace;
+    max-width: 80%;
+  }
+
+  /* ── Input area ── */
+  .input-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px 6px 6px 18px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    transition: border-color 0.2s;
+    margin-bottom: 10px;
+  }
+
+  .input-wrap:focus-within {
+    border-color: rgba(91,91,214,0.45);
+  }
+
+  .input-wrap textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    resize: none;
+    min-height: 24px;
+    max-height: 110px;
+    padding: 10px 0;
+    caret-color: var(--accent);
+  }
+
+  .input-wrap textarea::placeholder { color: var(--hint); }
+
+  .send-btn {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s;
+    flex-shrink: 0;
+    color: #fff;
+  }
+
+  .send-btn:hover { background: #7070e8; transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.96); }
+  .send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; opacity: 0.5; }
+
+  .hint-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hint {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--hint);
+    letter-spacing: 0.5px;
+  }
+
+  .clear-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--hint);
+    background: none;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: color 0.15s;
+    padding: 0;
+  }
+
+  .clear-btn:hover { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="glow-orb"></div>
+
+<div class="page">
+
+  <header>
+    <div class="badge">
+      <div class="live-dot"></div>
+      AI Powered
+    </div>
+    <h1>FACTCHECK</h1>
+    <p class="tagline">Enter any claim — get the truth instantly.</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div>
+        <div class="stat-num total" id="totalCount">0</div>
+        <div class="stat-label">Checked</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div>
+        <div class="stat-num t" id="trueCount">0</div>
+        <div class="stat-label">True</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div>
+        <div class="stat-num f" id="falseCount">0</div>
+        <div class="stat-label">False</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-window">
+    <div class="chat-header">
+      <span class="chat-title">Verdict Log</span>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:var(--true)"></div>TRUE</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--false)"></div>FALSE</div>
+      </div>
+    </div>
+    <div class="messages" id="messages">
+      <div class="empty" id="emptyState">
+        <div class="empty-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="10" cy="10" r="7" stroke="#6b6b90" stroke-width="1.5"/>
+            <path d="M15.5 15.5L20 20" stroke="#6b6b90" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p>Type any claim below.<br>I'll instantly tell you if it's <strong>True</strong> or <strong>False</strong>.</p>
+        <div class="chips">
+          <div class="chip" onclick="fillInput('The Great Wall of China is visible from space')">Great Wall from space?</div>
+          <div class="chip" onclick="fillInput('Water boils at 100°C at sea level')">Water boils at 100°C?</div>
+          <div class="chip" onclick="fillInput('Humans only use 10% of their brain')">10% brain myth?</div>
+          <div class="chip" onclick="fillInput('Lightning never strikes the same place twice')">Lightning myth?</div>
+          <div class="chip" onclick="fillInput('Diamonds are made of carbon')">Diamonds = carbon?</div>
+          <div class="chip" onclick="fillInput('Napoleon Bonaparte was very short')">Napoleon was short?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-wrap">
+    <textarea
+      id="factInput"
+      placeholder="Enter a claim to fact-check…"
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="sendBtn" onclick="checkFact()" title="Check fact">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 8H14M14 8L9 3M14 8L9 13" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="hint-row">
+    <span class="hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</span>
+    <button class="clear-btn" onclick="clearChat()">Clear history</button>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  // ─────────────────────────────────────────
+  //  BACKEND CONFIG — only you touch this
+  // ─────────────────────────────────────────
+  // GROQ_API_KEY is now loaded securely from config.js
+
+  // This is your backend prompt — user never sees this.
+  // It hard-locks the AI to only reply TRUE or FALSE.
+  function buildPrompt(claim) {
+    return `You are a fact-checking AI with one single job: determine if a claim is TRUE or FALSE.
+
+STRICT RULES (non-negotiable):
+1. You must respond with ONLY one word — either TRUE or FALSE.
+2. No explanations. No punctuation. No extra words. Nothing else.
+3. If the claim is factually correct → TRUE
+4. If the claim is factually incorrect or a myth → FALSE
+
+Claim to verify: "${claim}"
+
+Your single-word response:`;
+  }
+  // ─────────────────────────────────────────
+
+  let trueCount = 0, falseCount = 0, totalCount = 0;
+
+  function updateStats(verdict) {
+    totalCount++;
+    if (verdict === 'TRUE') trueCount++;
+    else falseCount++;
+    document.getElementById('totalCount').textContent = totalCount;
+    document.getElementById('trueCount').textContent = trueCount;
+    document.getElementById('falseCount').textContent = falseCount;
+  }
+
+  function fillInput(text) {
+    const inp = document.getElementById('factInput');
+    inp.value = text;
+    autoResize(inp);
+    inp.focus();
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      checkFact();
+    }
+  }
+
+  function removeEmpty() {
+    const e = document.getElementById('emptyState');
+    if (e) e.remove();
+  }
+
+  function scrollToBottom() {
+    const m = document.getElementById('messages');
+    m.scrollTop = m.scrollHeight;
+  }
+
+  function esc(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function addUserMessage(text) {
+    removeEmpty();
+    const div = document.createElement('div');
+    div.className = 'msg user';
+    div.innerHTML = `<div class="user-bubble">${esc(text)}</div>`;
+    document.getElementById('messages').appendChild(div);
+    scrollToBottom();
+  }
+
+  function addLoading() {
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.id = 'loadingMsg';
+    div.innerHTML = `
+      <div class="loading-bub">
+        <div class="dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+        <span class="loading-label">VERIFYING...</span>
+      </div>`;
+    document.getElementById('messages').appendChild(div);
+    scrollToBottom();
+  }
+
+  function removeLoading() {
+    const l = document.getElementById('loadingMsg');
+    if (l) l.remove();
+  }
+
+  function addVerdict(verdict) {
+    const isTrue = verdict === 'TRUE';
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.innerHTML = `
+      <div class="verdict ${isTrue ? 'true-v' : 'false-v'}">
+        <div class="v-icon-wrap">
+          ${isTrue
+            ? `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.5 9.5L7.5 13.5L14.5 5" stroke="${'#00e5a0'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+            : `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4.5 4.5L13.5 13.5M13.5 4.5L4.5 13.5" stroke="${'#ff4060'}" stroke-width="2" stroke-linecap="round"/></svg>`
+          }
+        </div>
+        <div class="v-word">${isTrue ? 'TRUE' : 'FALSE'}</div>
+      </div>`;
+    document.getElementById('messages').appendChild(div);
+    scrollToBottom();
+    updateStats(verdict);
+  }
+
+  function addError(msg) {
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.innerHTML = `<div class="err-bub">⚠ ${esc(msg)}</div>`;
+    document.getElementById('messages').appendChild(div);
+    scrollToBottom();
+  }
+
+  async function checkFact() {
+    const input = document.getElementById('factInput');
+    const claim = input.value.trim();
+    if (!claim) return;
+
+    const btn = document.getElementById('sendBtn');
+    input.value = '';
+    autoResize(input);
+    btn.disabled = true;
+
+    addUserMessage(claim);
+    addLoading();
+
+    try {
+      const response = await fetch(
+        `https://api.groq.com/openai/v1/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [{ role: "user", content: buildPrompt(claim) }],
+            max_tokens: 5,
+            temperature: 0
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error?.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const raw = (data.choices?.[0]?.message?.content || '').trim().toUpperCase();
+
+      // Extract TRUE or FALSE — even if model adds tiny extras
+      const verdict = raw.startsWith('TRUE') ? 'TRUE'
+                    : raw.startsWith('FALSE') ? 'FALSE'
+                    : null;
+
+      removeLoading();
+
+      if (verdict) {
+        addVerdict(verdict);
+      } else {
+        addError('Unexpected response. Please try again.');
+      }
+
+    } catch (err) {
+      removeLoading();
+      addError('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      input.focus();
+    }
+  }
+
+  function clearChat() {
+    const msgs = document.getElementById('messages');
+    msgs.innerHTML = `
+      <div class="empty" id="emptyState">
+        <div class="empty-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="10" cy="10" r="7" stroke="#6b6b90" stroke-width="1.5"/>
+            <path d="M15.5 15.5L20 20" stroke="#6b6b90" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p>Type any claim below.<br>I'll instantly tell you if it's <strong>True</strong> or <strong>False</strong>.</p>
+        <div class="chips">
+          <div class="chip" onclick="fillInput('The Great Wall of China is visible from space')">Great Wall from space?</div>
+          <div class="chip" onclick="fillInput('Water boils at 100°C at sea level')">Water boils at 100°C?</div>
+          <div class="chip" onclick="fillInput('Humans only use 10% of their brain')">10% brain myth?</div>
+          <div class="chip" onclick="fillInput('Lightning never strikes the same place twice')">Lightning myth?</div>
+          <div class="chip" onclick="fillInput('Diamonds are made of carbon')">Diamonds = carbon?</div>
+          <div class="chip" onclick="fillInput('Napoleon Bonaparte was very short')">Napoleon was short?</div>
+        </div>
+      </div>`;
+    trueCount = 0; falseCount = 0; totalCount = 0;
+    document.getElementById('totalCount').textContent = '0';
+    document.getElementById('trueCount').textContent = '0';
+    document.getElementById('falseCount').textContent = '0';
+  }
+</script>
+</body>
+</html>
