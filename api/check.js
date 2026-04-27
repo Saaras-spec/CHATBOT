@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { claim } = req.body;
+  const { claim, temperature = 0.2, topP = 0.9 } = req.body;
   if (!claim) {
     return res.status(400).json({ error: 'Claim is required' });
   }
@@ -11,25 +11,35 @@ export default async function handler(req, res) {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
   if (!GROQ_API_KEY) {
-    return res.status(500).json({ error: 'Server misconfiguration: Missing API key' });
+    return handleFallback(claim, res);
   }
 
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const prompt = `You are a fact-checking AI with one single job: determine if a claim is TRUE or FALSE.
+  const prompt = `You are a fact-checking AI designed to verify claims and detect misinformation.
 The current date is ${currentDate}. 
 
 CRITICAL CONTEXT FOR RECENT EVENTS (Your training data ends in 2023):
 - Donald Trump won the 2024 US Presidential Election and is the current President of the United States.
 
-STRICT RULES (non-negotiable):
-1. You must respond with ONLY one word — either TRUE or FALSE.
-2. No explanations. No punctuation. No extra words. Nothing else.
-3. If the claim is factually correct → TRUE
-4. If the claim is factually incorrect or a myth → FALSE
+You must evaluate the following claim and return a structured JSON response.
 
 Claim to verify: "${claim}"
 
-Your single-word response:`;
+Respond EXACTLY with the following JSON format (no markdown formatting, no other text):
+{
+  "verdict": "True" | "False" | "Partially True",
+  "confidenceScore": <number 0-100>,
+  "confidenceBreakdown": {
+    "evidence": <number 0-100 representing availability of evidence>,
+    "clarity": <number 0-100 representing clarity of the claim>,
+    "reliability": <number 0-100 representing reliability of the sources>
+  },
+  "explanation": "<detailed, evidence-based reasoning behind the verdict>",
+  "simplifiedExplanation": "<a very simple, easy-to-understand version of the explanation>",
+  "riskLevel": "Low Risk" | "Medium Risk" | "High Risk",
+  "category": "Health" | "Science" | "Social Media" | "Politics" | "General",
+  "correction": "<if false or partially true, provide the accurate corrected claim. If true, leave empty>"
+}`;
 
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -41,32 +51,66 @@ Your single-word response:`;
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 5,
-        temperature: 0
+        temperature: parseFloat(temperature),
+        top_p: parseFloat(topP),
+        response_format: { type: "json_object" }
       })
     });
 
     if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error?.message || `HTTP ${response.status}`);
+      console.warn(`Groq API Error: ${response.status} - Falling back to offline mode.`);
+      return handleFallback(claim, res);
     }
 
     const data = await response.json();
-    const raw = (data.choices?.[0]?.message?.content || '').trim().toUpperCase();
+    const raw = (data.choices?.[0]?.message?.content || '').trim();
 
-    // Extract TRUE or FALSE
-    const verdict = raw.startsWith('TRUE') ? 'TRUE'
-                  : raw.startsWith('FALSE') ? 'FALSE'
-                  : null;
-
-    if (!verdict) {
-      throw new Error('Unexpected response format from AI');
-    }
-
-    res.status(200).json({ verdict });
+    const parsedResponse = JSON.parse(raw);
+    res.status(200).json(parsedResponse);
 
   } catch (error) {
-    console.error('Groq API Error:', error);
-    res.status(500).json({ error: 'Failed to verify claim. Try again later.' });
+    console.error('API or Parsing Error:', error);
+    return handleFallback(claim, res);
   }
+}
+
+// Fallback logic for zero-cost / offline mode
+function handleFallback(claim, res) {
+  const lowerClaim = claim.toLowerCase();
+  
+  // Basic offline dictionary
+  let verdict = "Partially True";
+  let explanation = "Unable to reach the AI fact-checking service. This is a fallback analysis.";
+  let category = "General";
+  let riskLevel = "Low Risk";
+  let correction = "";
+
+  if (lowerClaim.includes("earth is flat")) {
+    verdict = "False";
+    explanation = "The Earth is roughly a sphere (an oblate spheroid). This has been proven by centuries of astronomy, space exploration, and satellite imagery.";
+    category = "Science";
+    correction = "The Earth is an oblate spheroid, not flat.";
+  } else if (lowerClaim.includes("water boils at 100")) {
+    verdict = "True";
+    explanation = "Water boils at 100°C (212°F) at sea level under standard atmospheric pressure.";
+    category = "Science";
+  } else if (lowerClaim.includes("bleach") && (lowerClaim.includes("drink") || lowerClaim.includes("cure"))) {
+    verdict = "False";
+    explanation = "Drinking bleach is extremely dangerous and does not cure any diseases. It can cause severe internal damage or death.";
+    category = "Health";
+    riskLevel = "High Risk";
+    correction = "Never ingest bleach; consult medical professionals for health treatments.";
+  }
+
+  res.status(200).json({
+    verdict,
+    confidenceScore: 50,
+    confidenceBreakdown: { evidence: 50, clarity: 50, reliability: 50 },
+    explanation,
+    simplifiedExplanation: explanation,
+    riskLevel,
+    category,
+    correction,
+    isFallback: true
+  });
 }
