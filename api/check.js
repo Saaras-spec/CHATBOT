@@ -18,9 +18,6 @@ export default async function handler(req, res) {
   const prompt = `You are a fact-checking AI designed to verify claims and detect misinformation.
 The current date is ${currentDate}. 
 
-CRITICAL CONTEXT FOR RECENT EVENTS (Your training data ends in 2023):
-- Donald Trump won the 2024 US Presidential Election and is the current President of the United States.
-
 You must evaluate the following input and return a structured JSON response.
 IMPORTANT: If the user input is a greeting, a subjective opinion, a personal question (e.g. "what is my name", "how are you"), or generally NOT a verifiable factual claim, you MUST set the verdict to "Not a Claim" and explain why it cannot be fact-checked.
 
