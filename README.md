@@ -14,10 +14,10 @@ This project is a web-based AI chatbot designed to verify factual claims and det
 6. **Evidence-Based Explanation:** Provides reasoning behind the verdict and compares the claim with known facts.
 7. **Claim Correction Suggestion:** Suggests a corrected and accurate version if a claim is false or misleading.
 8. **Session-Based Memory:** Uses browser LocalStorage to view past claims, re-check results, and track history.
-9. **Dual Explanation Mode:** Users can toggle between Standard (detailed) and Simplified explanations.
-10. **Misinformation Category Detection:** Classifies claims into categories like Health, Science, Social Media, and General.
-11. **Basic Dashboard Interface:** Features a history sidebar, claim input section, and a top bar with real-time analytics.
-12. **Fallback Handling (Zero-Cost Optimization):** Uses predefined offline knowledge responses if the API fails or limits are reached.
+10. **Bilingual Support (i18n):** Fully supports English and Hindi. Users can switch the UI language, and the AI will generate explanations and corrections in the selected language.
+11. **Misinformation Category Detection:** Classifies claims into categories like Health, Science, Social Media, and General.
+12. **Basic Dashboard Interface:** Features a history sidebar, claim input section, and a top bar with real-time analytics.
+13. **Fallback Handling (Zero-Cost Optimization):** Uses predefined offline knowledge responses if the API fails or limits are reached.
 
 ## Technology Stack
 

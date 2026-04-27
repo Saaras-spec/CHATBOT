@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { claim, temperature = 0.0, topP = 1.0 } = req.body;
+  const { claim, temperature = 0.0, topP = 1.0, language = 'English' } = req.body;
   if (!claim) {
     return res.status(400).json({ error: 'Claim is required' });
   }
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
   if (!GROQ_API_KEY) {
-    return handleFallback(claim, res);
+    return handleFallback(claim, res, language);
   }
 
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -24,6 +24,9 @@ CRITICAL CONTEXT FOR RECENT EVENTS (Your training data ends in 2023):
 You must evaluate the following input and return a structured JSON response.
 IMPORTANT: If the user input is a greeting, a subjective opinion, a personal question (e.g. "what is my name", "how are you"), or generally NOT a verifiable factual claim, you MUST set the verdict to "Not a Claim" and explain why it cannot be fact-checked.
 
+The user has requested the output language to be ${language}. You MUST write the "explanation", "simplifiedExplanation", "correction", and "category" fields entirely in ${language}. 
+However, the "verdict" and "riskLevel" fields MUST remain strictly in English as requested below so the system can parse them.
+
 Input to verify: "${claim}"
 
 Respond EXACTLY with the following JSON format (no markdown formatting, no other text):
@@ -35,11 +38,11 @@ Respond EXACTLY with the following JSON format (no markdown formatting, no other
     "clarity": <number 0-100 representing clarity of the claim>,
     "reliability": <number 0-100 representing reliability of the sources>
   },
-  "explanation": "<detailed, evidence-based reasoning behind the verdict, or explanation of why it is not a claim>",
-  "simplifiedExplanation": "<a very simple, easy-to-understand version of the explanation>",
+  "explanation": "<detailed, evidence-based reasoning behind the verdict, or explanation of why it is not a claim. Write this in ${language}>",
+  "simplifiedExplanation": "<a very simple, easy-to-understand version of the explanation. Write this in ${language}>",
   "riskLevel": "Low Risk" | "Medium Risk" | "High Risk",
-  "category": "Health" | "Science" | "Social Media" | "Politics" | "General" | "Not Applicable",
-  "correction": "<if false or partially true, provide the accurate corrected claim. Otherwise, leave empty>"
+  "category": "<Health | Science | Social Media | Politics | General | Not Applicable> - translate this category name into ${language}",
+  "correction": "<if false or partially true, provide the accurate corrected claim. Otherwise, leave empty. Write this in ${language}>"
 }`;
 
   try {
@@ -76,31 +79,22 @@ Respond EXACTLY with the following JSON format (no markdown formatting, no other
 }
 
 // Fallback logic for zero-cost / offline mode
-function handleFallback(claim, res) {
+function handleFallback(claim, res, language) {
   const lowerClaim = claim.toLowerCase();
+  const isHindi = language === 'Hindi';
   
   // Basic offline dictionary
   let verdict = "Partially True";
-  let explanation = "Unable to reach the AI fact-checking service. This is a fallback analysis.";
-  let category = "General";
+  let explanation = isHindi ? "AI सेवा तक पहुंचने में असमर्थ। यह एक ऑफ़लाइन विश्लेषण है।" : "Unable to reach the AI fact-checking service. This is a fallback analysis.";
+  let category = isHindi ? "सामान्य" : "General";
   let riskLevel = "Low Risk";
   let correction = "";
 
-  if (lowerClaim.includes("earth is flat")) {
+  if (lowerClaim.includes("earth is flat") || lowerClaim.includes("पृथ्वी चपटी")) {
     verdict = "False";
-    explanation = "The Earth is roughly a sphere (an oblate spheroid). This has been proven by centuries of astronomy, space exploration, and satellite imagery.";
-    category = "Science";
-    correction = "The Earth is an oblate spheroid, not flat.";
-  } else if (lowerClaim.includes("water boils at 100")) {
-    verdict = "True";
-    explanation = "Water boils at 100°C (212°F) at sea level under standard atmospheric pressure.";
-    category = "Science";
-  } else if (lowerClaim.includes("bleach") && (lowerClaim.includes("drink") || lowerClaim.includes("cure"))) {
-    verdict = "False";
-    explanation = "Drinking bleach is extremely dangerous and does not cure any diseases. It can cause severe internal damage or death.";
-    category = "Health";
-    riskLevel = "High Risk";
-    correction = "Never ingest bleach; consult medical professionals for health treatments.";
+    explanation = isHindi ? "पृथ्वी गोल (चपटी नहीं) है। यह खगोल विज्ञान और उपग्रह इमेजरी द्वारा सिद्ध किया गया है।" : "The Earth is roughly a sphere (an oblate spheroid). This has been proven by centuries of astronomy, space exploration, and satellite imagery.";
+    category = isHindi ? "विज्ञान" : "Science";
+    correction = isHindi ? "पृथ्वी चपटी नहीं, गोल है।" : "The Earth is an oblate spheroid, not flat.";
   }
 
   res.status(200).json({

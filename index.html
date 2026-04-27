@@ -243,7 +243,6 @@
     display: flex; justify-content: space-between;
     font-size: 12px; color: var(--muted); margin-bottom: 8px;
   }
-  .setting-slider { width: 100%; cursor: pointer; }
   .setting-select {
     width: 100%; background: var(--surface); border: 1px solid var(--border);
     color: var(--text); padding: 8px; border-radius: 6px; outline: none;
@@ -341,8 +340,8 @@
   <!-- Sidebar History -->
   <div class="sidebar">
     <div class="sidebar-header">
-      <span class="sidebar-title">Session History</span>
-      <button class="clear-history-btn" onclick="clearHistory()">Clear</button>
+      <span class="sidebar-title" data-i18n="sessionHistory">Session History</span>
+      <button class="clear-history-btn" onclick="clearHistory()" data-i18n="clear">Clear</button>
     </div>
     <div class="history-list" id="historyList">
       <!-- History items injected here -->
@@ -355,56 +354,63 @@
     <!-- Top Dashboard -->
     <div class="top-bar">
       <div class="brand">
-        <h1>FACTCHECK AI</h1>
-        <p>Enterprise Misinformation Detection System</p>
+        <h1 data-i18n="brandTitle">FACTCHECK AI</h1>
+        <p data-i18n="brandSubtitle">Enterprise Misinformation Detection System</p>
       </div>
       <div class="dashboard-stats">
         <div class="stat-box">
           <span class="stat-val" id="stat-total">0</span>
-          <span class="stat-label">Checked</span>
+          <span class="stat-label" data-i18n="checked">Checked</span>
         </div>
         <div class="stat-box">
           <span class="stat-val val-true" id="stat-true">0</span>
-          <span class="stat-label">True</span>
+          <span class="stat-label" data-i18n="true">True</span>
         </div>
         <div class="stat-box">
           <span class="stat-val val-false" id="stat-false">0</span>
-          <span class="stat-label">False</span>
+          <span class="stat-label" data-i18n="false">False</span>
         </div>
         <div class="stat-box">
           <span class="stat-val val-partial" id="stat-partial">0</span>
-          <span class="stat-label">Partial</span>
+          <span class="stat-label" data-i18n="partial">Partial</span>
         </div>
       </div>
-      <button class="settings-toggle" onclick="toggleSettings()">⚙ Settings</button>
+      <button class="settings-toggle" onclick="toggleSettings()" data-i18n="settingsBtn">⚙ Settings</button>
     </div>
 
     <!-- Settings Panel -->
     <div class="settings-panel" id="settingsPanel">
       <div class="setting-group">
-        <div class="setting-label"><span>Explanation Mode</span></div>
+        <div class="setting-label"><span data-i18n="language">Language</span></div>
+        <select class="setting-select" id="languageSelect" onchange="changeLanguage(this.value)">
+          <option value="English">English</option>
+          <option value="Hindi">हिंदी (Hindi)</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label"><span data-i18n="explanationMode">Explanation Mode</span></div>
         <select class="setting-select" id="expMode">
-          <option value="standard">Standard (Detailed)</option>
-          <option value="simplified">Simplified (Easy)</option>
+          <option value="standard" data-i18n="expStandard">Standard (Detailed)</option>
+          <option value="simplified" data-i18n="expSimplified">Simplified (Easy)</option>
         </select>
       </div>
     </div>
 
     <!-- Chat Area -->
     <div class="chat-container" id="chatContainer">
-      <div style="text-align:center; color:var(--muted); margin-top:50px;">
+      <div style="text-align:center; color:var(--muted); margin-top:50px;" id="welcomeMsg">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:15px; opacity:0.5;">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           <path d="M9 12l2 2 4-4"/>
         </svg>
-        <p>Enter a claim below to verify its factual accuracy.<br>The AI will analyze evidence, clarity, and reliability.</p>
+        <p data-i18n="welcomeText">Enter a claim below to verify its factual accuracy.<br>The AI will analyze evidence, clarity, and reliability.</p>
       </div>
     </div>
 
     <!-- Input Area -->
     <div class="input-area">
       <div class="input-wrapper">
-        <textarea id="claimInput" placeholder="Analyze a claim (e.g., 'Vaccines alter human DNA')..." rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); submitClaim(); }" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';"></textarea>
+        <textarea id="claimInput" data-i18n-placeholder="inputPlaceholder" placeholder="Analyze a claim (e.g., 'Vaccines alter human DNA')..." rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); submitClaim(); }" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';"></textarea>
         <button class="send-btn" id="sendBtn" onclick="submitClaim()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
         </button>
@@ -415,15 +421,95 @@
 </div>
 
 <script>
+  // Translations Dictionary
+  const translations = {
+    English: {
+      sessionHistory: "Session History",
+      clear: "Clear",
+      brandTitle: "FACTCHECK AI",
+      brandSubtitle: "Enterprise Misinformation Detection System",
+      checked: "Checked",
+      true: "True",
+      false: "False",
+      partial: "Partial",
+      settingsBtn: "⚙ Settings",
+      language: "Language",
+      explanationMode: "Explanation Mode",
+      expStandard: "Standard (Detailed)",
+      expSimplified: "Simplified (Easy)",
+      welcomeText: "Enter a claim below to verify its factual accuracy.<br>The AI will analyze evidence, clarity, and reliability.",
+      inputPlaceholder: "Analyze a claim (e.g., 'Vaccines alter human DNA')...",
+      overallConf: "Overall Confidence",
+      evidence: "Evidence",
+      clarity: "Clarity",
+      reliability: "Reliability",
+      explanationStd: "Explanation (Detailed)",
+      explanationSimp: "Explanation (Simplified)",
+      correction: "Fact Check Correction",
+      offlineMode: "Offline Mode",
+      verdicts: {
+        "TRUE": "TRUE",
+        "FALSE": "FALSE",
+        "PARTIALLY TRUE": "PARTIALLY TRUE",
+        "NOT A CLAIM": "NOT A CLAIM"
+      },
+      risks: {
+        "Low Risk": "Low Risk",
+        "Medium Risk": "Medium Risk",
+        "High Risk": "High Risk"
+      }
+    },
+    Hindi: {
+      sessionHistory: "सत्र इतिहास (Session History)",
+      clear: "साफ़ करें",
+      brandTitle: "फैक्ट-चेक AI",
+      brandSubtitle: "एंटरप्राइज़ गलत सूचना पहचान प्रणाली",
+      checked: "जांच की गई",
+      true: "सच",
+      false: "झूठ",
+      partial: "आंशिक",
+      settingsBtn: "⚙ सेटिंग्स",
+      language: "भाषा (Language)",
+      explanationMode: "व्याख्या मोड",
+      expStandard: "मानक (विस्तृत)",
+      expSimplified: "सरल (आसान)",
+      welcomeText: "किसी भी दावे की तथ्यात्मक सटीकता की जांच करने के लिए उसे नीचे दर्ज करें।<br>AI साक्ष्य, स्पष्टता और विश्वसनीयता का विश्लेषण करेगा।",
+      inputPlaceholder: "एक दावे का विश्लेषण करें (उदा., 'टीके मानव डीएनए को बदलते हैं')...",
+      overallConf: "समग्र आत्मविश्वास (Confidence)",
+      evidence: "साक्ष्य (Evidence)",
+      clarity: "स्पष्टता (Clarity)",
+      reliability: "विश्वसनीयता (Reliability)",
+      explanationStd: "व्याख्या (विस्तृत)",
+      explanationSimp: "व्याख्या (सरल)",
+      correction: "तथ्य जांच सुधार",
+      offlineMode: "ऑफ़लाइन मोड",
+      verdicts: {
+        "TRUE": "सच (TRUE)",
+        "FALSE": "झूठ (FALSE)",
+        "PARTIALLY TRUE": "आंशिक रूप से सच (PARTIALLY TRUE)",
+        "NOT A CLAIM": "यह दावा नहीं है"
+      },
+      risks: {
+        "Low Risk": "कम जोखिम",
+        "Medium Risk": "मध्यम जोखिम",
+        "High Risk": "उच्च जोखिम"
+      }
+    }
+  };
+
   // State
   let history = JSON.parse(localStorage.getItem('factcheck_history')) || [];
+  let currentLanguage = localStorage.getItem('factcheck_language') || 'English';
   
   // Init
   window.onload = () => {
+    document.getElementById('languageSelect').value = currentLanguage;
+    applyLanguage(currentLanguage);
     updateDashboard();
     renderHistory();
     if(history.length > 0) {
-      document.getElementById('chatContainer').innerHTML = ''; // clear welcome msg
+      const welcome = document.getElementById('welcomeMsg');
+      if(welcome) welcome.remove();
       // Render last few items
       history.slice(-3).forEach(item => {
         appendUserMessage(item.claim);
@@ -431,6 +517,38 @@
       });
     }
   };
+
+  function changeLanguage(lang) {
+    currentLanguage = lang;
+    localStorage.setItem('factcheck_language', lang);
+    applyLanguage(lang);
+    // Re-render history and chat to translate existing badges
+    renderHistory();
+    // We only re-render the badges in chat without reloading the whole chat to avoid complexity,
+    // or just let them stay as is until the next claim.
+  }
+
+  function applyLanguage(lang) {
+    const t = translations[lang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if(t[key]) el.innerHTML = t[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if(t[key]) el.setAttribute('placeholder', t[key]);
+    });
+  }
+
+  function tString(keyType, englishValue) {
+    const t = translations[currentLanguage];
+    if (t[keyType] && t[keyType][englishValue]) return t[keyType][englishValue];
+    return englishValue; // fallback
+  }
+
+  function getUIString(key) {
+    return translations[currentLanguage][key];
+  }
 
   function toggleSettings() {
     document.getElementById('settingsPanel').classList.toggle('active');
@@ -449,7 +567,7 @@
       localStorage.removeItem('factcheck_history');
       updateDashboard();
       renderHistory();
-      document.getElementById('chatContainer').innerHTML = '<div style="text-align:center; color:var(--muted); margin-top:50px;"><p>History cleared. Enter a new claim.</p></div>';
+      document.getElementById('chatContainer').innerHTML = `<div style="text-align:center; color:var(--muted); margin-top:50px;"><p>${translations[currentLanguage].welcomeText}</p></div>`;
     }
   }
 
@@ -478,12 +596,14 @@
       else if(vText.includes('PARTIAL')) vColor = 'var(--partial)';
       else if(vText.includes('NOT A CLAIM')) vColor = 'var(--unverifiable)';
 
+      const localizedVerdict = tString('verdicts', vText);
+
       const div = document.createElement('div');
       div.className = 'history-item';
       div.innerHTML = `
         <div class="history-claim">${item.claim}</div>
         <div class="history-meta">
-          <span style="color:${vColor}; font-weight:bold;">${vText}</span>
+          <span style="color:${vColor}; font-weight:bold;">${localizedVerdict}</span>
           <span>${new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
         </div>
       `;
@@ -552,20 +672,26 @@
     const chat = document.getElementById('chatContainer');
     const vClass = getVerdictClass(data.verdict);
     const rClass = getRiskClass(data.riskLevel);
+    
+    // Translations
+    const locVerdict = tString('verdicts', (data.verdict || '').toUpperCase());
+    const locRisk = tString('risks', data.riskLevel);
+
     const expMode = document.getElementById('expMode').value;
     const explanation = expMode === 'simplified' ? (data.simplifiedExplanation || data.explanation) : data.explanation;
+    const expTitle = expMode === 'simplified' ? getUIString('explanationSimp') : getUIString('explanationStd');
     
     // Confidence breakdown parsing
     const bd = data.confidenceBreakdown || { evidence: 0, clarity: 0, reliability: 0 };
     
     // Fallback badge if triggered
-    const fallbackBadge = data.isFallback ? `<span class="tag" style="border-color:var(--partial); color:var(--partial)">Offline Mode</span>` : '';
+    const fallbackBadge = data.isFallback ? `<span class="tag" style="border-color:var(--partial); color:var(--partial)">${getUIString('offlineMode')}</span>` : '';
 
     let correctionHtml = '';
     if(data.correction && data.correction.trim().length > 0 && !vClass.includes('true')) {
       correctionHtml = `
         <div class="vc-correction">
-          <h4>Fact Check Correction</h4>
+          <h4>${getUIString('correction')}</h4>
           <p>${data.correction}</p>
         </div>
       `;
@@ -576,37 +702,37 @@
     card.innerHTML = `
       <div class="verdict-card">
         <div class="vc-header">
-          <div class="vc-verdict ${vClass}">${data.verdict.toUpperCase()}</div>
+          <div class="vc-verdict ${vClass}">${locVerdict}</div>
           <div class="vc-tags">
             ${fallbackBadge}
             <span class="tag cat">${data.category}</span>
-            <span class="tag ${rClass}">${data.riskLevel}</span>
+            <span class="tag ${rClass}">${locRisk}</span>
           </div>
         </div>
         
         <div class="vc-scores">
           <div class="score-main">
-            <div class="score-label">Overall Confidence (${data.confidenceScore}%)</div>
+            <div class="score-label">${getUIString('overallConf')} (${data.confidenceScore}%)</div>
             <div class="progress-bar"><div class="progress-fill" style="width: ${data.confidenceScore}%"></div></div>
           </div>
           <div class="breakdown">
             <div class="bd-item">
-              <div class="score-label" style="font-size:9px">Evidence</div>
+              <div class="score-label" style="font-size:9px">${getUIString('evidence')}</div>
               <div class="bd-bar"><div class="bd-fill" style="width:${bd.evidence}%; background:#5b5bd6"></div></div>
             </div>
             <div class="bd-item">
-              <div class="score-label" style="font-size:9px">Clarity</div>
+              <div class="score-label" style="font-size:9px">${getUIString('clarity')}</div>
               <div class="bd-bar"><div class="bd-fill" style="width:${bd.clarity}%; background:#5b5bd6"></div></div>
             </div>
             <div class="bd-item">
-              <div class="score-label" style="font-size:9px">Reliability</div>
+              <div class="score-label" style="font-size:9px">${getUIString('reliability')}</div>
               <div class="bd-bar"><div class="bd-fill" style="width:${bd.reliability}%; background:#5b5bd6"></div></div>
             </div>
           </div>
         </div>
 
         <div class="vc-content">
-          <h4>Explanation (${expMode === 'simplified' ? 'Simplified' : 'Detailed'})</h4>
+          <h4>${expTitle}</h4>
           <p>${explanation}</p>
         </div>
         
@@ -636,7 +762,7 @@
       const res = await fetch('/api/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ claim })
+        body: JSON.stringify({ claim, language: currentLanguage })
       });
 
       removeElement(loadId);
