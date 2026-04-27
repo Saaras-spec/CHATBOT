@@ -18,6 +18,7 @@
     --true: #00e5a0;
     --false: #ff4060;
     --partial: #ffb84d;
+    --unverifiable: #9090e8;
     
     --risk-low: #00e5a0;
     --risk-medium: #ffb84d;
@@ -165,6 +166,7 @@
   .val-true { color: var(--true); }
   .val-false { color: var(--false); }
   .val-partial { color: var(--partial); }
+  .val-unverifiable { color: var(--unverifiable); }
 
   .settings-toggle {
     background: var(--card); border: 1px solid var(--border);
@@ -282,6 +284,7 @@
   .vc-verdict.true { color: var(--true); }
   .vc-verdict.false { color: var(--false); }
   .vc-verdict.partial { color: var(--partial); font-size: 30px; }
+  .vc-verdict.unverifiable { color: var(--unverifiable); font-size: 28px; }
 
   .vc-tags { display: flex; gap: 8px; flex-wrap: wrap; }
   .tag {
@@ -481,6 +484,7 @@
       if(vText.includes('TRUE') && !vText.includes('PARTIAL')) vColor = 'var(--true)';
       else if(vText.includes('FALSE')) vColor = 'var(--false)';
       else if(vText.includes('PARTIAL')) vColor = 'var(--partial)';
+      else if(vText.includes('NOT A CLAIM')) vColor = 'var(--unverifiable)';
 
       const div = document.createElement('div');
       div.className = 'history-item';
@@ -546,6 +550,7 @@
 
   function getVerdictClass(v) {
     const r = (v || '').toUpperCase();
+    if(r.includes('NOT A CLAIM') || r.includes('UNVERIFIABLE')) return 'unverifiable';
     if(r.includes('PARTIAL')) return 'partial';
     if(r.includes('TRUE')) return 'true';
     return 'false';

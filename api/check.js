@@ -21,24 +21,25 @@ The current date is ${currentDate}.
 CRITICAL CONTEXT FOR RECENT EVENTS (Your training data ends in 2023):
 - Donald Trump won the 2024 US Presidential Election and is the current President of the United States.
 
-You must evaluate the following claim and return a structured JSON response.
+You must evaluate the following input and return a structured JSON response.
+IMPORTANT: If the user input is a greeting, a subjective opinion, a personal question (e.g. "what is my name", "how are you"), or generally NOT a verifiable factual claim, you MUST set the verdict to "Not a Claim" and explain why it cannot be fact-checked.
 
-Claim to verify: "${claim}"
+Input to verify: "${claim}"
 
 Respond EXACTLY with the following JSON format (no markdown formatting, no other text):
 {
-  "verdict": "True" | "False" | "Partially True",
-  "confidenceScore": <number 0-100>,
+  "verdict": "True" | "False" | "Partially True" | "Not a Claim",
+  "confidenceScore": <number 0-100, use 0 if not a claim>,
   "confidenceBreakdown": {
     "evidence": <number 0-100 representing availability of evidence>,
     "clarity": <number 0-100 representing clarity of the claim>,
     "reliability": <number 0-100 representing reliability of the sources>
   },
-  "explanation": "<detailed, evidence-based reasoning behind the verdict>",
+  "explanation": "<detailed, evidence-based reasoning behind the verdict, or explanation of why it is not a claim>",
   "simplifiedExplanation": "<a very simple, easy-to-understand version of the explanation>",
   "riskLevel": "Low Risk" | "Medium Risk" | "High Risk",
-  "category": "Health" | "Science" | "Social Media" | "Politics" | "General",
-  "correction": "<if false or partially true, provide the accurate corrected claim. If true, leave empty>"
+  "category": "Health" | "Science" | "Social Media" | "Politics" | "General" | "Not Applicable",
+  "correction": "<if false or partially true, provide the accurate corrected claim. Otherwise, leave empty>"
 }`;
 
   try {
