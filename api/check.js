@@ -3,22 +3,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { claim, temperature = 0.0, topP = 1.0, language = 'English' } = req.body;
+  const { claim, temperature = 0.0, language = 'English' } = req.body;
   if (!claim) {
     return res.status(400).json({ error: 'Claim is required' });
   }
 
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCQvWxWQZ7Qf0ACVtNrqmiqke1j5eLITVI";
 
-  if (!GROQ_API_KEY) {
+  if (!GEMINI_API_KEY) {
     return handleFallback(claim, res, language);
   }
 
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const currentYear = new Date().getFullYear();
+  
   const prompt = `You are a fact-checking AI designed to verify claims and detect misinformation.
 The current date is ${currentDate}. You must act as if you are operating in the year ${currentYear}.
-CRITICAL RULE: Never mention your "knowledge cutoff", "training data", or say "as of 2023". Answer all questions naturally as if your knowledge is fully current up to ${currentDate}.
+CRITICAL RULE: You have access to Google Search. You must use it to find the absolute latest information up to ${currentDate} before making your verdict.
 
 You must evaluate the following input and return a structured JSON response.
 IMPORTANT: If the user input is a greeting, a subjective opinion, a personal question (e.g. "what is my name", "how are you"), or generally NOT a verifiable factual claim, you MUST set the verdict to "Not a Claim" and explain why it cannot be fact-checked.
@@ -45,35 +46,51 @@ Respond EXACTLY with the following JSON format (no markdown formatting, no other
 }`;
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: prompt }],
-        temperature: parseFloat(temperature),
-        top_p: parseFloat(topP),
-        response_format: { type: "json_object" }
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        tools: [{
+          googleSearch: {}
+        }],
+        generationConfig: {
+          temperature: parseFloat(temperature),
+          responseMimeType: "application/json"
+        }
       })
     });
 
     if (!response.ok) {
-      console.warn(`Groq API Error: ${response.status} - Falling back to offline mode.`);
-      return handleFallback(claim, res);
+      const errorData = await response.text();
+      console.error('Gemini API Error:', errorData);
+      return handleFallback(claim, res, language);
     }
 
     const data = await response.json();
-    const raw = (data.choices?.[0]?.message?.content || '').trim();
+    
+    // Extract text from Gemini response structure
+    let resultText = '';
+    try {
+      resultText = data.candidates[0].content.parts[0].text;
+    } catch (e) {
+      console.error("Failed to parse Gemini response structure", data);
+      return handleFallback(claim, res, language);
+    }
 
-    const parsedResponse = JSON.parse(raw);
-    res.status(200).json(parsedResponse);
+    // Clean up potential markdown formatting (sometimes AI ignores the rule)
+    resultText = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    const parsedData = JSON.parse(resultText);
+    res.status(200).json(parsedData);
 
   } catch (error) {
-    console.error('API or Parsing Error:', error);
-    return handleFallback(claim, res);
+    console.error('Fact check error:', error);
+    return handleFallback(claim, res, language);
   }
 }
 

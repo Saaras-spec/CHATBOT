@@ -23,14 +23,14 @@ This project is a web-based AI chatbot designed to verify factual claims and det
 
 - **Frontend:** HTML, CSS (Custom Premium Dark Theme), Vanilla JavaScript
 - **Backend:** Node.js, Vercel Serverless Functions (`api/check.js`)
-- **API:** Groq API (llama-3.3-70b-versatile)
+- **API:** Google Gemini 2.0 Flash (with Live Web Search)
 - **Storage:** Browser LocalStorage
 
 ## Setup Instructions
 
 1. Clone this repository.
-2. Ensure you have a valid Groq API key.
-3. Create an environment variable named `GROQ_API_KEY` with your key.
+2. Ensure you have a valid Google Gemini API key.
+3. Create an environment variable named `GEMINI_API_KEY` with your key.
 4. Deploy to Vercel (or any platform supporting serverless functions). The application relies on the `/api/check` endpoint.
 
 ## Key Advantages
