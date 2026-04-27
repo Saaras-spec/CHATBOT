@@ -15,8 +15,10 @@ export default async function handler(req, res) {
   }
 
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const currentYear = new Date().getFullYear();
   const prompt = `You are a fact-checking AI designed to verify claims and detect misinformation.
-The current date is ${currentDate}. 
+The current date is ${currentDate}. You must act as if you are operating in the year ${currentYear}.
+CRITICAL RULE: Never mention your "knowledge cutoff", "training data", or say "as of 2023". Answer all questions naturally as if your knowledge is fully current up to ${currentDate}.
 
 You must evaluate the following input and return a structured JSON response.
 IMPORTANT: If the user input is a greeting, a subjective opinion, a personal question (e.g. "what is my name", "how are you"), or generally NOT a verifiable factual claim, you MUST set the verdict to "Not a Claim" and explain why it cannot be fact-checked.
