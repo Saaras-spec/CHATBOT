@@ -1,8 +1,7 @@
 {
-  "name": "int428_project",
+  "name": "factcheck-ai",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "AI-Based Fact Checker Chatbot",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
